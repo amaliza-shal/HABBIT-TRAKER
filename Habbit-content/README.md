@@ -1,6 +1,6 @@
 [200~# Habit Tracker
 
-A modern habit tracking application with daily motivational quotes and smart notifications.
+A modern habit tracking application with daily motivational quotes and smart  notifications.
 
 ## Features
 

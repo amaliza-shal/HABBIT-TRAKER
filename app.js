@@ -1,4 +1,4 @@
-// Habit Reminder App with RapidAPI Quotes
+// Habit Reminder App with Enhanced Notifications
 document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
     const habitForm = document.getElementById('habitForm');
@@ -19,101 +19,76 @@ document.addEventListener('DOMContentLoaded', function() {
         fetchMotivationalQuote();
     }
 
-    // ===== NOTIFICATION FUNCTIONS =====
-    function checkNotificationPermission() {
-        if (!('Notification' in window)) {
-            console.warn('This browser does not support notifications');
-            return;
-        }
-        
-        if (Notification.permission === 'default') {
-            showModal();
-        } else if (Notification.permission === 'denied') {
-            console.log('Notifications blocked by user');
-        }
-    }
-    
-    function showModal() {
-        permissionModal.style.display = 'flex';
-    }
-    
-    function hideModal() {
-        permissionModal.style.display = 'none';
-    }
-    
-    function requestNotificationPermission() {
-        if (!('Notification' in window)) {
-            alert('This browser does not support desktop notifications');
-            return;
-        }
-        
-        Notification.requestPermission()
-            .then(permission => {
-                hideModal();
-                if (permission === 'granted') {
-                    showNotification(
-                        'Habit Reminder', 
-                        'Notifications enabled! You\'ll now receive habit reminders.'
-                    );
-                }
-            })
-            .catch(err => {
-                console.error('Error requesting notification permission:', err);
-                hideModal();
-            });
-    }
-    
+    // ===== ENHANCED NOTIFICATION FUNCTIONS =====
     function showNotification(title, body) {
         if (!('Notification' in window)) {
-            console.warn('This browser does not support notifications');
-            return;
-        }
-        
-        try {
-            if (Notification.permission === 'granted') {
-                new Notification(title, { body });
-            } else if (Notification.permission !== 'denied') {
-                Notification.requestPermission()
-                    .then(permission => {
-                        if (permission === 'granted') {
-                            new Notification(title, { body });
-                        }
-                    });
-            }
-        } catch (error) {
-            console.error('Error showing notification:', error);
-        }
-    }
-    
-    function sendTestNotification() {
-        if (!('Notification' in window)) {
-            alert('This browser does not support desktop notifications');
+            console.warn('Notifications not supported');
             return;
         }
 
         if (Notification.permission === 'granted') {
-            showNotification(
-                'Test Notification', 
-                'This is a test notification from Habit Reminder!'
-            );
+            // Create persistent notification
+            const notification = new Notification(title, { 
+                body,
+                requireInteraction: true,  // Stays until clicked
+                tag: 'habit-reminder',    // Prevents duplicates
+                icon: 'https://cdn-icons-png.flaticon.com/512/3063/3063188.png' // Default icon
+            });
+            
+            // Play notification sound
+            playNotificationSound();
+            
+            // Vibrate if on mobile
+            triggerVibration();
+            
+            // Auto-close after 15 seconds if not clicked
+            setTimeout(() => notification.close(), 15000);
+            
         } else if (Notification.permission !== 'denied') {
             Notification.requestPermission()
                 .then(permission => {
-                    if (permission === 'granted') {
-                        showNotification(
-                            'Test Notification', 
-                            'This is a test notification from Habit Reminder!'
-                        );
-                    } else {
-                        alert('Please enable notifications to use this feature.');
-                    }
+                    if (permission === 'granted') showNotification(title, body);
                 });
-        } else {
-            alert('Notifications were blocked. Please enable them in your browser settings.');
         }
     }
 
-    // ===== HABIT TRACKING FUNCTIONS =====
+    function playNotificationSound() {
+        try {
+            // Web Audio API (no external files needed)
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1);
+            
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        } catch (e) {
+            console.log('Audio context not supported:', e);
+        }
+    }
+
+    function triggerVibration() {
+        if ('vibrate' in navigator) {
+            navigator.vibrate([200, 100, 200]); // Vibrate pattern
+        }
+    }
+
+    function checkNotificationPermission() {
+        if (!('Notification' in window)) return;
+        if (Notification.permission === 'default') showModal();
+    }
+
+    function showModal() {
+        permissionModal.style.display = 'flex';
+    }
+
+    // ===== HABIT MANAGEMENT FUNCTIONS =====
     function addHabit(e) {
         e.preventDefault();
         
@@ -126,13 +101,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        const days = Array.from(dayCheckboxes).map(cb => parseInt(cb.value));
-        
         const habit = {
             id: Date.now(),
             name: habitName,
             time: reminderTime,
-            days: days
+            days: Array.from(dayCheckboxes).map(cb => parseInt(cb.value))
         };
         
         saveHabit(habit);
@@ -163,10 +136,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function renderHabit(habit) {
-        if (habitsList.querySelector('.empty-state')) {
-            habitsList.innerHTML = '';
-        }
-        
         const daysMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const daysText = habit.days.map(day => daysMap[day]).join(', ');
         
@@ -196,7 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setInterval(checkReminders, 60000);
         checkReminders();
     }
-    
+
     function checkReminders() {
         if (!('Notification' in window) || Notification.permission !== 'granted') return;
         
@@ -205,66 +174,72 @@ document.addEventListener('DOMContentLoaded', function() {
         const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
                          now.getMinutes().toString().padStart(2, '0');
         
-        const habits = getHabits();
-        
-        habits.forEach(habit => {
-            if (habit.days.includes(currentDay)) {
-                if (habit.time === currentTime) {
-                    showNotification('Habit Reminder', `Time to ${habit.name}!`);
-                }
+        getHabits().forEach(habit => {
+            if (habit.days.includes(currentDay) && habit.time === currentTime) {
+                showNotification('Habit Reminder', `Time to ${habit.name}!`);
             }
         });
     }
 
-    // ===== QUOTE API FUNCTIONS =====
+    // ===== RELIABLE QUOTE FETCHING =====
     async function fetchMotivationalQuote() {
-        // Fallback quotes
+        // Local fallback quotes (guaranteed to work)
         const FALLBACK_QUOTES = [
             { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
             { text: "You don't have to be great to start, but you have to start to be great.", author: "Zig Ziglar" },
             { text: "Small daily improvements lead to stunning results.", author: "Robin Sharma" }
         ];
-        
-        // Check cache first
-        const cachedQuote = localStorage.getItem('dailyQuote');
-        if (cachedQuote) {
-            motivationalQuoteEl.textContent = cachedQuote;
-            return;
-        }
-        
+
         try {
-            // RapidAPI call
-            const url = 'https://random-quote-generator2.p.rapidapi.com/randomQuote';
-            const options = {
-                method: 'GET',
-                headers: {
-                    'x-rapidapi-key': '756014f0d6msh1b1accca748d026p150be8jsn9db97b6721a0',
-                    'x-rapidapi-host': 'random-quote-generator2.p.rapidapi.com'
-                }
-            };
+            // Try primary API first
+            const response = await fetch('https://type.fit/api/quotes');
             
-            const response = await fetch(url, options);
+            if (!response.ok) throw new Error(`API error: ${response.status}`);
             
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
-            }
+            const quotes = await response.json();
             
-            const data = await response.json();
-            const quoteText = `"${data.quote}" — ${data.author || 'Unknown'}`;
+            // Validate API response structure
+            if (!Array.isArray(quotes)) throw new Error('Invalid API response format');
             
-            motivationalQuoteEl.textContent = quoteText;
-            localStorage.setItem('dailyQuote', quoteText);
+            // Filter out any invalid entries
+            const validQuotes = quotes.filter(quote => 
+                quote?.text && typeof quote.text === 'string'
+            );
+            
+            if (validQuotes.length === 0) throw new Error('No valid quotes found');
+            
+            // Select random quote and clean author name
+            const randomQuote = validQuotes[Math.floor(Math.random() * validQuotes.length)];
+            const cleanAuthor = randomQuote.author 
+                ? randomQuote.author.replace(', type.fit', '') 
+                : 'Unknown';
+            
+            motivationalQuoteEl.textContent = `"${randomQuote.text}" — ${cleanAuthor}`;
             
         } catch (error) {
-            console.error('API failed, using fallback:', error);
-            const randomFallback = FALLBACK_QUOTES[Math.floor(Math.random() * FALLBACK_QUOTES.length)];
+            console.error('Using fallback quotes:', error);
+            // Use local fallback if API fails
+            const randomFallback = FALLBACK_QUOTES[
+                Math.floor(Math.random() * FALLBACK_QUOTES.length)
+            ];
             motivationalQuoteEl.textContent = `"${randomFallback.text}" — ${randomFallback.author}`;
         }
     }
 
     // Event Listeners
     habitForm.addEventListener('submit', addHabit);
-    testNotificationBtn.addEventListener('click', sendTestNotification);
-    allowNotificationsBtn.addEventListener('click', requestNotificationPermission);
-    denyNotificationsBtn.addEventListener('click', hideModal);
+    testNotificationBtn.addEventListener('click', () => {
+        showNotification('Test Notification', 'This is a test of the reminder system!');
+    });
+    allowNotificationsBtn.addEventListener('click', () => {
+        Notification.requestPermission().then(permission => {
+            permissionModal.style.display = 'none';
+            if (permission === 'granted') {
+                showNotification('Notifications Enabled', 'You will now receive reminders!');
+            }
+        });
+    });
+    denyNotificationsBtn.addEventListener('click', () => {
+        permissionModal.style.display = 'none';
+    });
 });

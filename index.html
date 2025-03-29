@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Reminder</title>
+    <link href="styles.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">Habit Reminder</h1>
+            <p class="subtitle">Build better habits with timely reminders</p>
+        </header>
+
+        <div class="grid">
+            <!-- Add Habit Form -->
+            <div class="habit-card">
+                <h2 class="card-title">Add New Habit</h2>
+                <form id="habitForm" class="form">
+                    <div class="form-group">
+                        <label for="habitName" class="label">Habit Name</label>
+                        <input type="text" id="habitName" class="input" placeholder="e.g. Read a book" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reminderTime" class="label">Reminder Time</label>
+                        <input type="time" id="reminderTime" class="input" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="label">Days to Remind</label>
+                        <div class="days-container" id="reminderDays">
+                            <label class="day-label">
+                                <input type="checkbox" class="checkbox" value="0"> Sun
+                            </label>
+                            <label class="day-label">
+                                <input type="checkbox" class="checkbox" value="1"> Mon
+                            </label>
+                            <label class="day-label">
+                                <input type="checkbox" class="checkbox" value="2"> Tue
+                            </label>
+                            <label class="day-label">
+                                <input type="checkbox" class="checkbox" value="3"> Wed
+                            </label>
+                            <label class="day-label">
+                                <input type="checkbox" class="checkbox" value="4"> Thu
+                            </label>
+                            <label class="day-label">
+                                <input type="checkbox" class="checkbox" value="5"> Fri
+                            </label>
+                            <label class="day-label">
+                                <input type="checkbox" class="checkbox" value="6"> Sat
+                            </label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Habit</button>
+                </form>
+            </div>
+
+            <!-- Upcoming Reminders -->
+            <div class="habit-card">
+                <h2 class="card-title">Your Habits</h2>
+                <div id="habitsList" class="habits-list">
+                    <!-- Habits will be listed here -->
+                </div>
+                <div class="test-notification">
+                    <button id="testNotification" class="btn btn-secondary">Test Notification</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Motivational Quote -->
+        <div class="habit-card quote-card">
+            <h2 class="card-title">Today's Motivation</h2>
+            <p id="motivationalQuote" class="quote-text">Loading motivational quote...</p>
+        </div>
+    </div>
+
+    <!-- Notification Permission Modal -->
+    <div id="permissionModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Enable Notifications</h3>
+            <p class="modal-text">To receive habit reminders, please allow notifications for this site.</p>
+            <div class="modal-buttons">
+                <button id="denyNotifications" class="btn btn-secondary">Not Now</button>
+                <button id="allowNotifications" class="btn btn-primary">Allow</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
